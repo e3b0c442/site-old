@@ -3,6 +3,8 @@ title: Advent of Code 2015 introduction
 date: 2022-03-27T01:57:42.899Z
 draft: false
 featured: false
+authors:
+  - nick-meyer
 tags:
   - advent-of-code
   - advent-of-code-2015
