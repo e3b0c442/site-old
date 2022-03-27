@@ -1,5 +1,5 @@
 ---
-title: "Advent of Code 2015 Day 1: C"
+title: "Advent of Code 2015: C boilerplate"
 date: 2022-03-27T15:55:40.495Z
 draft: false
 featured: false
@@ -20,6 +20,9 @@ Now, before we start any coding in C, we need to do some setup. Unlike the other
 
 Since I live and work in a UNIX-based world, we'll be using GNU Make to build our project. I won't be going too far into detail in discussing this, except to note that we are trying to build binaries for each individual day as well as a binary that will run all days, and trying to do so in a fashion that will allow the fewest updates to the `Makefile` with each day.
 
+## Boilerplate
+
+### Makefile
 Here's our `Makefile`:
 
 ```makefile {linenos=table}
@@ -80,6 +83,8 @@ The gist of this is, we track any common build flags and libraries that need to 
 
 Now that we have our build setup, we need to add a little boilerplate. In particular, we need to set up our entrypoint for the builds, and a header file from which we can include the code for each day's puzzles.
 
+### Entrypoint
+
 ```c {linenos=table}
 #include <stdio.h>
 #include <string.h>
@@ -99,19 +104,21 @@ int main(int argc, char const *argv[])
     clock_t start = clock();
     int rval = DAYNUM(argv[1]);
     clock_t end = clock();
-    double duration = ((double) (end - start)) / CLOCKS_PER_SEC;
+    double duration = ((double)(end - start)) / CLOCKS_PER_SEC;
 
     if (rval)
     {
         fprintf(stderr, "%s\n", err_msg);
         return 1;
-    } else {
+    }
+    else
+    {
         printf("\tCompleted in %gms", duration * 1000.0);
     }
 
     return 0;
 }
-#else // #ifdef DAYNUM
+#else  // #ifdef DAYNUM
 typedef int (*day_f)(const char *);
 
 static const int days_len = 1;
@@ -134,17 +141,30 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
+    printf("Advent of Code 2015\n");
+    clock_t start = clock();
     for (int i = 0; i < days_len; i++)
     {
         sprintf(path, "%s/%d.txt", argv[1], i + 1);
+
+        clock_t day_start = clock();
         int rval = days[i](path);
+        clock_t day_end = clock();
+        double day_duration = ((double)(day_end - day_start)) / CLOCKS_PER_SEC;
+
         if (rval)
         {
             fprintf(stderr, "%s\n", err_msg);
             return rval;
         }
+        else
+        {
+            printf("\tCompleted in %gms\n", day_duration * 1000.0);
+        }
     }
-
+    clock_t end = clock();
+    double duration = ((double)(end - start)) / CLOCKS_PER_SEC;
+    printf("All puzzles completed in %gms\n", duration * 1000.0);
     return 0;
 }
 #endif // #ifdef DAYNUM
@@ -199,7 +219,9 @@ Here is the meat of our function. We first get a monotonic time from the operati
     {
         fprintf(stderr, "%s\n", err_msg);
         return 1;
-    } else {
+    } 
+    else
+    {
         printf("\tCompleted in %gms\n", duration * 1000.0);
     }
 
@@ -211,18 +233,132 @@ We wrap up our single-day entrypoint by checking the return value of the called 
 
 Now, let's look at the multi-day entrypoint on the other side of `#else // #ifdef DAYNUM`.
 
-```c {linenos=table,linenostart=31}
+```c {linenos=table,linenostart=33}
 #else // #ifdef DAYNUM
 typedef int (*day_f)(const char *);
 ```
 
 The first thing we do is make a type alias of pointer to a function with the signature each day\* function is going to have, in this case `int (const char*)`, meaning each day's function is going to be passed a C string and return an `int`.
 
-```c {linenos=table,linenostart=34}
+```c {linenos=table,linenostart=36}
 static const int days_len = 1;
 static const day_f days[] = {
     day1,
 };
 ```
 
-Then we define the array of functions along with a length, remembering that C arrays only store a pointer to the front of the array, and do not store the length. Each time we add a day, we'll need to update `days_len` and the `days` array. C does not have dynamic dispatch
+Then we define the array of functions along with a length, remembering that C arrays only store a pointer to the front of the array, and do not store the length. Each time we add a day, we'll need to update `days_len` and the `days` array. C does not have dynamic dispatch, so we can't programatically build the array from a numeric range.
+
+```c {linenos=table,linenostart=40}
+static char path[FILENAME_MAX];
+```
+
+To finish setting up the multi-day build, we allocate an array on the stack with the maximum number of bytes a filename can contain.
+
+```c {linenos=table,linenostart=42}
+int main(int argc, char const *argv[])
+{
+    if (argc < 2)
+    {
+        fprintf(stderr, "%s\n", "must provide path to input files");
+        return 1;
+    }
+```
+
+We are now in the entrypoint. Identical to the above, we expect a single argument, this time with the path to the folder of input files, and exit with an error code if that is not provided.
+
+```c {linenos=table,linenostart=50}
+    if (strlen(argv[1]) > FILENAME_MAX - 8)
+    {
+        fprintf(stderr, "%s\n", "input path too long");
+        return 1;
+    }
+```
+
+Because C will happily let us shoot our own foot off with overflows, we do a bounds check on the argument to ensure we don't overflow the array we allocated, and exit with an error code if we are out of bounds.
+
+```c {linenos=table,linenostart=56}
+    printf("Advent of Code 2015\n");
+    clock_t start = clock();
+    for (int i = 0; i < days_len; i++)
+    {
+        sprintf(path, "%s/%d.txt", argv[1], i + 1);
+
+        clock_t day_start = clock();
+        int rval = days[i](path);
+        clock_t day_end = clock();
+        double day_duration = ((double)(day_end - day_start)) / CLOCKS_PER_SEC;
+
+        if (rval)
+        {
+            fprintf(stderr, "%s\n", err_msg);
+            return rval;
+        }
+        else
+        {
+            printf("\tCompleted in %gms\n", day_duration * 1000.0);
+        }
+    }
+    clock_t end = clock();
+    double duration = ((double)(end - start)) / CLOCKS_PER_SEC;
+    printf("All puzzles completed in %gms\n", duration * 1000.0);
+    return 0;
+```
+The logic here is nearly identical to the single day execution, except that we set up a loop to build each day in the `days` array, utilizing the function pointers to make the calls.
+
+We now have an entrypoint that will handle each day as we add it, with minimal additional fuss; the only requirement is to update the `days` and `days_len` variables accordingly.
+
+We included two header files, `"days.h"` and `"lib.h"`. Let's explore those now.
+
+### days.h
+
+```c {linenos=table}
+#ifndef E3B0C442_AOC_2015_DAYS_H
+#define E3B0C442_AOC_2015_DAYS_H
+
+int day1(const char *filename);
+
+#endif // E3B0C442_AOC_2015_DAYS_H
+```
+
+This one is super simple. We'll put function declarations for each day's function in here. The macros in this file are called _include guards_, and are used to ensure the contents of the file are only included once even though it may itself be included in multiple files (remember, "include" in C is a straight verbatim text replacement; the preprocessor itself has no logic to determine if that file has already been included). We'll update this file for each day's puzzles to add that day's function.
+
+### lib.h
+
+```c {linenos=table}
+#ifndef E3B0C442_AOC_2015_LIB_H
+#define E3B0C442_AOC_2015_LIB_H
+
+#define ERR_MSG_SIZE 256
+
+extern char err_msg[ERR_MSG_SIZE];
+
+void set_err_msg(const char *error, ...);
+
+#endif // E3B0C442_AOC_2015_LIB_H
+```
+
+In this file, we have function declarations for library functions that may be used across multiple days. In this file we are defining a maximum size for an error message, and telling the compiler that the actual allocation for the error message string is in another file. We also have the function declaration for setting the error message. The implementations for these functions are in `lib.c`.
+
+### lib.c
+```c {linenos=table}
+#include <stdarg.h>
+#include <stdio.h>
+#include "lib.h"
+
+char err_msg[ERR_MSG_SIZE] = {0};
+
+void set_err_msg(const char *msg, ...)
+{
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(err_msg, ERR_MSG_SIZE - 1, msg, args);
+    va_end(args);
+}
+```
+
+In `lib.c`, we find the declaration and initialization for the `err_msg` string which holds the error message. As C does not implicitly initialize memory, we use the shorthand `{0}` to initialize the array to all zeroes, an empty string.
+
+We also have the implementation for `set_err_msg`, which is a simple wrapper around `vsnprintf`. `set_err_msg` is a _variadic function_, which means it can take an unbounded set of additional arguments, noted by the trailing `...` in the arguments list. Using `va_list`, `va_start`, and `va_end` from `stdarg.h` we are able to obtain and pass the set of variadic arguments down to `vsnprintf`, which itself wraps `snprintf` for this purpose.
+
+Now that we've completed our boilerplate, let's start looking at implementing Day 1
