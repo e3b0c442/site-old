@@ -22,22 +22,23 @@ Since I live and work in a UNIX-based world, we'll be using GNU Make to build ou
 
 Here's our `Makefile`:
 
-```makefile {title=Makefile}
-CC 					:= gcc
+{{< caption >}}Makefile{{< /caption >}}
+```makefile
+CC                  := gcc
 ifdef OPT
-override CCFLAGS	+= -Wall -pedantic -std=c17 -O3
+override CCFLAGS    += -Wall -pedantic -std=c17 -O3
 else
-override CCFLAGS	+= -Wall -g -pedantic -std=c17 -Og
+override CCFLAGS    += -Wall -g -pedantic -std=c17 -Og
 endif
-override LDFLAGS	+= 
+override LDFLAGS    += 
 
 
-DAYNUMS 	:= 1 
-DAYS		:= $(addprefix day, $(DAYNUMS))
-DAY_BINS	:= $(addprefix bin/, $(DAYS))
-DAY_OBJS	:= $(addprefix obj/, $(addsuffix .o, $(DAYS)))
-DAY_MAINS	:= $(addprefix obj/main, $(addsuffix .o, $(DAYS)))
-LIBS		:= common
+DAYNUMS     := 1 
+DAYS        := $(addprefix day, $(DAYNUMS))
+DAY_BINS    := $(addprefix bin/, $(DAYS))
+DAY_OBJS    := $(addprefix obj/, $(addsuffix .o, $(DAYS)))
+DAY_MAINS   := $(addprefix obj/main, $(addsuffix .o, $(DAYS)))
+LIBS        := lib
 LIB_OBJS    := $(addprefix obj/, $(addsuffix .o, $(LIBS)))
 
 .PHONY: clean all aoc2015 $(DAYS)
@@ -49,32 +50,32 @@ aoc2015: obj bin bin/aoc2015
 $(DAYS): % : obj bin bin/%
 
 $(DAY_BINS): bin/% : obj/%.o obj/main%.o $(LIB_OBJS)
-	$(CC) -o $@ $^ $(CCFLAGS) $(LDFLAGS)
+    $(CC) -o $@ $^ $(CCFLAGS) $(LDFLAGS)
 
 $(DAY_MAINS): src/main.c
-	$(CC) -c -o $@ $< -D DAYNUM=$(@:obj/main%.o=%) $(CCFLAGS)
+    $(CC) -c -o $@ $< -D DAYNUM=$(@:obj/main%.o=%) $(CCFLAGS)
 
 bin/aoc2015: obj/aoc2015.o $(LIB_OBJS) $(DAY_OBJS)
-	$(CC) -o $@ $^ $(CCFLAGS) $(LDFLAGS)
+    $(CC) -o $@ $^ $(CCFLAGS) $(LDFLAGS)
 
 obj/aoc2015.o: src/main.c
-	$(CC) -c -o $@ $< $(CCFLAGS)
+    $(CC) -c -o $@ $< $(CCFLAGS)
 
 $(DAY_OBJS): obj/%.o : src/%.c
-	$(CC) -c -o $@ $< $(CCFLAGS)
+    $(CC) -c -o $@ $< $(CCFLAGS)
 
 $(LIB_OBJS): obj/%.o : src/%.c
-	$(CC) -c -o $@ $< $(CCFLAGS)
+    $(CC) -c -o $@ $< $(CCFLAGS)
 
 obj:
-	mkdir -p obj
+    mkdir -p obj
 
 bin:
-	mkdir -p bin
+    mkdir -p bin
 
 clean:
-	rm -rf obj
-	rm -rf bin
+    rm -rf obj
+    rm -rf bin
 ```
 The gist of this is, we track any common build flags and libraries that need to be added to the build up at the top, and then use some `make` functions to build variables based on the day name. This allows us to only come back in and update the `DAYNUMS` variable for each day we build. This `Makefile` allows us to build everything, or just a specific day. This setup also allows us to factor out reusable code into library files that are not specific to a day.
 
