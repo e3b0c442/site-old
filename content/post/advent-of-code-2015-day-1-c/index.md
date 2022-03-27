@@ -80,7 +80,7 @@ The gist of this is, we track any common build flags and libraries that need to 
 
 Now that we have our build setup, we need to add a little boilerplate. In particular, we need to set up our entrypoint for the builds, and a header file from which we can include the code for each day's puzzles.
 
-```c {title=main.c}
+```c {linenos=table}
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -106,7 +106,7 @@ int main(int argc, char const *argv[])
         fprintf(stderr, "%s\n", err_msg);
         return 1;
     } else {
-        printf("\tCompleted in %gms\n", duration * 1000.0);
+        printf("\tCompleted in %gms", duration * 1000.0);
     }
 
     return 0;
@@ -114,7 +114,7 @@ int main(int argc, char const *argv[])
 #else // #ifdef DAYNUM
 typedef int (*day_f)(const char *);
 
-static const int days_len = 11;
+static const int days_len = 1;
 static const day_f days[] = {
     day1,
 };
@@ -152,29 +152,30 @@ int main(int argc, char const *argv[])
 
 Let's walk through this file one chunk at a time.
 
-```c 
+```c {linenos=table,linenostart=1}
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "days.h"
 #include "lib.h"
 ```
 
 At the top of the file, we have our includes. We'll discuss why these includes are necessary as we encounter code that uses the included functions.
 
-```c
+```c {linenos=table,linenostart=7}
 #ifdef DAYNUM
 ```
 
 Because we want to keep a single entrypoint file, we are going to use `#ifdef` macros to determine which code should be compiled for a particular set of conditions. The code between `#ifdef DAYNUM` and `#else // #ifdef DAYNUM` (note I'm using comments to help keep track of which `#ifdef` the `#else` belongs to) will be compiled in the steps which are building the executable for a single day's puzzle. The code between `#else // #ifdef DAYNUM` and `#endif // #ifdef DAYNUM` will be compiled in the step where we are building the executable to run all the puzzles. `DAYNUM` is defined in the `Makefile` for the appropriate steps, and is set to a string `day<#>` where `<#>` is replaced with the day number we are building.
 
-```c
+```c {linenos=table,linenostart=8}
 int main(int argc, char const *argv[])
 {
 ```
 
 The entrypoint for a single-day executable. As is standard, our `main` function has two arguments, `argc` which is the total count of arguments passed (including the executable itself), and `argv` which is an array of strings representing the arguments.
 
-```c
+```c {linenos=table,linenostart=10}
     if (argc < 2)
     {
         fprintf(stderr, "%s\n", "must provide path to input file");
@@ -184,17 +185,16 @@ The entrypoint for a single-day executable. As is standard, our `main` function 
 
 Here, we have some input validation. Any single day's executable requires a single argument which contains the path to the input file for that day. If that argument is not provided, we return with a non-zero exit code. In C, the return value of the `main` function is the exit code provided to the operating system.
 
-```c
+```c {linenos=table,linenostart=16}
     clock_t start = clock();
     int rval = DAYNUM(argv[1]);
     end = clock();
     duration = ((double) (end - start)) / CLOCKS_PER_SEC;
-
 ```
 
 Here is the meat of our function. We first get a monotonic time from the operating system by calling the `clock` function included from `time.h`. We then run the function for the day we are building. Notice the use of the `DAYNUM` macro; this is replaced by the actual function name, e.g. `day1` for day 1, allowing us to use the same entrypoint for each day's puzzle even if the functions are named differently. Finally, we take another monotonic time at the end, find the difference, and divide by `CLOCKS_PER_SEC` -- also included from `time.h` -- to determine how many seconds were required to execute the puzzle function.
 
-```c
+```c {linenos=table,linenostart=21}
     if (rval)
     {
         fprintf(stderr, "%s\n", err_msg);
@@ -211,14 +211,14 @@ We wrap up our single-day entrypoint by checking the return value of the called 
 
 Now, let's look at the multi-day entrypoint on the other side of `#else // #ifdef DAYNUM`.
 
-```c
+```c {linenos=table,linenostart=31}
 #else // #ifdef DAYNUM
 typedef int (*day_f)(const char *);
 ```
 
 The first thing we do is make a type alias of pointer to a function with the signature each day\* function is going to have, in this case `int (const char*)`, meaning each day's function is going to be passed a C string and return an `int`.
 
-```
+```c {linenos=table,linenostart=34}
 static const int days_len = 1;
 static const day_f days[] = {
     day1,
