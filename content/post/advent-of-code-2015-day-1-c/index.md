@@ -20,8 +20,6 @@ Now, before we start any coding in C, we need to do some setup. Unlike the other
 
 Since I live and work in a UNIX-based world, we'll be using GNU Make to build our project. I won't be going too far into detail in discussing this, except to note that we are trying to build binaries for each individual day as well as a binary that will run all days, and trying to do so in a fashion that will allow the fewest updates to the `Makefile` with each day.
 
-## Boilerplate
-
 ### Makefile
 Here's our `Makefile`:
 
@@ -361,4 +359,4 @@ In `lib.c`, we find the declaration and initialization for the `err_msg` string 
 
 We also have the implementation for `set_err_msg`, which is a simple wrapper around `vsnprintf`. `set_err_msg` is a _variadic function_, which means it can take an unbounded set of additional arguments, noted by the trailing `...` in the arguments list. Using `va_list`, `va_start`, and `va_end` from `stdarg.h` we are able to obtain and pass the set of variadic arguments down to `vsnprintf`, which itself wraps `snprintf` for this purpose.
 
-Now that we've completed our boilerplate, let's start looking at implementing Day 1
+Now that we've completed our boilerplate, the next article will look at implementing Day 1 in C.
