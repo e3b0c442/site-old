@@ -1,7 +1,7 @@
 ---
 title: "Advent of Code 2015 Day 1: C"
 date: 2022-03-27T15:55:40.495Z
-draft: true
+draft: false
 featured: false
 authors:
   - nick-meyer
