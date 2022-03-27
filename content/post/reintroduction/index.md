@@ -4,7 +4,7 @@ date: 2022-03-27T01:52:50.294Z
 draft: false
 featured: true
 authors:
-  - nick-meter
+  - nick-meyer
 image:
   filename: featured
   focal_point: Smart
