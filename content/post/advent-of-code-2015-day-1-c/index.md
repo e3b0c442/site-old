@@ -22,7 +22,7 @@ Since I live and work in a UNIX-based world, we'll be using GNU Make to build ou
 
 Here's our `Makefile`:
 
-{{< highlight makefile "full=True" >}}
+{{< highlight makefile `full=True,title="Makefile"` >}}
 CC                  := gcc
 ifdef OPT
 override CCFLAGS    += -Wall -pedantic -std=c17 -O3
