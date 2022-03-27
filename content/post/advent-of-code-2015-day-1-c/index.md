@@ -22,8 +22,7 @@ Since I live and work in a UNIX-based world, we'll be using GNU Make to build ou
 
 Here's our `Makefile`:
 
-{{< caption >}}Makefile{{< /caption >}}
-```makefile
+{{< highlight makefile "full=True" }}
 CC                  := gcc
 ifdef OPT
 override CCFLAGS    += -Wall -pedantic -std=c17 -O3
@@ -76,7 +75,8 @@ bin:
 clean:
     rm -rf obj
     rm -rf bin
-```
+{{< /highlight >}}
+
 The gist of this is, we track any common build flags and libraries that need to be added to the build up at the top, and then use some `make` functions to build variables based on the day name. This allows us to only come back in and update the `DAYNUMS` variable for each day we build. This `Makefile` allows us to build everything, or just a specific day. This setup also allows us to factor out reusable code into library files that are not specific to a day.
 
 Now that we have our build setup, we need to add a little boilerplate. In particular, we need to set up our entrypoint for the builds, and a header file from which we can include the code for each day's puzzles.
