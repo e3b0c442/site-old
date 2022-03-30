@@ -1,6 +1,6 @@
 ---
 title: "Advent of Code 2015: C boilerplate"
-date: 2022-03-27T15:55:40.495Z
+date: 2022-03-30T03:27:58.314Z
 draft: false
 featured: false
 authors:
