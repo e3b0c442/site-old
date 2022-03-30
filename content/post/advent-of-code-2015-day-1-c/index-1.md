@@ -1,9 +1,15 @@
 ---
 title: "Advent of Code 2015 Day 1: C"
 subtitle: Not Quite Lisp
-date: 2022-03-30T03:29:30.086Z
+date: 2022-03-30T03:58:16.625Z
 draft: false
 featured: false
+authors:
+  - nick-meyer
+tags:
+  - advent-of-code
+  - advent-of-code-2015
+  - c
 image:
   filename: featured
   focal_point: Smart
