@@ -75,7 +75,7 @@ int read_file_to_buffer(char **buf, const char *filename)
     // get the length
     if (fseek(f, 0L, SEEK_END))
     {
-        set_err_msg("unable to seek file: %s", strerror(errno));
+        set_err_msg("unable to seek file");
         goto err_cleanup;
     }
     long filesize = ftell(f);
@@ -103,6 +103,8 @@ int read_file_to_buffer(char **buf, const char *filename)
             set_err_msg("unable to read entire file: %s", strerror(errno));
             goto err_cleanup;
         }
+        set_err_msg("read %d bytes, expected %d", rd, filesize);
+        goto err_cleanup;
     }
 
     rval = rd;
@@ -119,3 +121,102 @@ cleanup:
     return rval;
 }
 ```
+
+Let's break this down.
+
+```c {linenos=table,linenostart=10}
+    *buf = NULL;
+    int rval;
+```
+
+The first thing we do is set the _value_ behind the provided pointer (so, the pointer being pointed to) to `NULL`. It will remain `NULL` unless the operation succeeds. We also predeclare our return value here.
+
+```c {linenos=table, linenostart=13}
+    // open the file
+    FILE *f = fopen(filename, "r");
+    if (f == NULL)
+    {
+        set_err_msg("unable to open file: %s", strerror(errno));
+        goto err_cleanup;
+    }
+```
+
+Now we are going to attempt to open the file. `fopen` is included from `stdio.h`, and it returns `NULL` and sets `errno` if the file cannot be opened. If that is the case, we set our own error message with a little more detail using our `set_err_msg` utility, and make a jump to do more cleanup (more on this in a bit).
+
+```c {linenos=table,linenostart=31}
+    // get the length
+    if (fseek(f, 0L, SEEK_END))
+    {
+        set_err_msg("unable to seek file");
+        goto err_cleanup;
+    }
+    long filesize = ftell(f);
+    if (filesize < 0)
+    {
+        set_err_msg("unable to get file size: %s", strerror(errno));
+        goto err_cleanup;
+    }
+    rewind(f);
+```
+
+Remember that this is C, and we do not have a dynamically-resizing array. Therefore, we need to figure out how large our buffer needs to be to hold the entire file. While there are slightly more concise ways outside of the standard library to determine the file size, in particular the POSIX `stat` function), this method is easy to understand and allows us to stick with the C standard library. In order to find our file size, we `fseek` to the end (`SEEK_END`) of the file, and then `ftell` to get the position of the file pointer (which is now at the end of the file, effectively giving is our filesize). `fseek` returns 0 on success, so we can use a shorthand in our `if` statement to handle errors. `ftell` returns <0 if an error occurs, and sets `errno`.
+
+Finally, we `rewind` the file pointer to the beginning of the file to prepare for reading it.
+
+```c {linenos=table,linenostart=45}
+    // allocate the buffer
+    *buf = calloc(filesize + 1, sizeof(char));
+    if (*buf == NULL)
+    {
+        set_err_msg("unable to allocate buffer for file read: %s", strerror(errno));
+        goto err_cleanup;
+    }
+```
+
+Now we allocate and initialize the buffer. `calloc` is included from `stdlib.h`, and takes two arguments: a number of objects, and the size of each object. In order to be extra clear here, we use sizeof(char) even though this is always one byte. We allocate `filesize+1` bytes to ensure we have a valid C string with a null terminator. `calloc` returns a pointer to the _initialized_ buffer (all bytes are set to 0), saving us the step of manually initializing. If calloc returns `NULL` it was not able to allocate the memory. In practice, if this were to happen the system probably wouldn't even be able to get to a point where you could see the error output, but we'll handle the error case for consistency and because it's a good habit.
+
+```c {linenos=table,linenostart=53}
+    // read the file into the buffer
+    size_t rd = fread(*buf, 1, filesize, f);
+    if (rd < filesize)
+    {
+        if (ferror(f))
+        {
+            set_err_msg("unable to read entire file: %s", strerror(errno));
+            goto err_cleanup;
+        }
+        set_err_msg("read %d bytes, expected %d", rd, filesize);
+        goto err_cleanup;
+    }
+```
+
+Now we'll read the file into the buffer. `fread` is included from `stdio.h` and takes four arguments: the buffer into which we're reading, the size of each object to read, the number of objects to read, and the file pointer to read from, and returns the number of bytes read. We use this for our error check; if the number of bytes read is less than what we were expecting, we check for a read error with `ferror` and then set our error message based on this. If `ferror` returns 0, there was another issue but we know we don't have the whole file, so we'll still return as an error.
+
+```c {linenos=table,linenostart=66}
+    rval = rd;
+    goto cleanup;
+
+err_cleanup:
+    rval = -1;
+    if (*buf != NULL)
+        free(*buf);
+    *buf = NULL;
+cleanup:
+    if (f != NULL)
+        fclose(f);
+    return rval;
+}
+```
+
+Now that we have completed our logic, we're going to clean up and return. The use of `goto` functions can be controversial in C development, but I find that it offers a sane and easily understandable way to ensure cleanup occurs in all cases.
+
+If we've gotten this far without an error, we can set our return value to the number of bytes read (which is the length of the C string in our buffer), then jump over the error cleanup and do our all-cases cleanup, which is ensuring we've closed our file.
+
+If we've encountered an error at any other point in the function, we'll have jumped to `err_cleanup`. In this case, we set our return value to `-1`, `free` our buffer to ensure there is no memory leaking, and set the buffer pointer back to `NULL`. We then continue to the all-cases cleanup which closes the file.
+
+We now have a straightforward, reusable function for reading each day's input into memory and returning a pointer to the buffer. Maybe now we can look at solving the problem.
+
+### The day
+
+
+
