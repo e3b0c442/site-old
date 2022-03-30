@@ -55,3 +55,67 @@ We'll first add our declaration to `lib.h`:
 ```c {linenos=table,linenostart=9}
 int read_file_to_buffer(char **buf, const char *filename);
 ```
+
+Our function will have two arguments: A pointer to a pointer where we can place the pointer to the allocated buffer, and the string with the filename. It will return the length of the buffer. Here's our implementation that will be added to `lib.c`:
+
+```c {linenos=table,linenostart=18}
+int read_file_to_buffer(char **buf, const char *filename)
+{
+    *buf = NULL;
+    int rval;
+
+    // open the file
+    FILE *f = fopen(filename, "r");
+    if (f == NULL)
+    {
+        set_err_msg("unable to open file: %s", strerror(errno));
+        goto err_cleanup;
+    }
+
+    // get the length
+    if (fseek(f, 0L, SEEK_END))
+    {
+        set_err_msg("unable to seek file: %s", strerror(errno));
+        goto err_cleanup;
+    }
+    long filesize = ftell(f);
+    if (filesize < 0)
+    {
+        set_err_msg("unable to get file size: %s", strerror(errno));
+        goto err_cleanup;
+    }
+    rewind(f);
+
+    // allocate the buffer
+    *buf = calloc(filesize + 1, sizeof(char));
+    if (*buf == NULL)
+    {
+        set_err_msg("unable to allocate buffer for file read: %s", strerror(errno));
+        goto err_cleanup;
+    }
+
+    // read the file into the buffer
+    size_t rd = fread(*buf, 1, filesize, f);
+    if (rd < filesize)
+    {
+        if (ferror(f))
+        {
+            set_err_msg("unable to read entire file: %s", strerror(errno));
+            goto err_cleanup;
+        }
+    }
+
+    rval = rd;
+    goto cleanup;
+
+err_cleanup:
+    rval = -1;
+    if (*buf != NULL)
+        free(*buf);
+    *buf = NULL;
+cleanup:
+    if (f != NULL)
+        fclose(f);
+    return rval;
+}
+```
