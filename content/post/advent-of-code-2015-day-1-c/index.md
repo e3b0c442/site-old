@@ -4,6 +4,12 @@ subtitle: Not Quite Lisp
 date: 2022-03-30T04:05:58.657Z
 draft: false
 featured: false
+authors:
+  - nick-meyer
+tags:
+  - advent-of-code-2015
+  - advent-of-code
+  - c
 image:
   filename: featured
   focal_point: Smart
