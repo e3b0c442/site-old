@@ -332,11 +332,12 @@ This one is super simple. We'll put function declarations for each day's functio
 extern char err_msg[ERR_MSG_SIZE];
 
 void set_err_msg(const char *error, ...);
+void format_duration(char *buf, int buf_size, double seconds);
 
 #endif // E3B0C442_AOC_2015_LIB_H
 ```
 
-In this file, we have function declarations for library functions that may be used across multiple days. In this file we are defining a maximum size for an error message, and telling the compiler that the actual allocation for the error message string is in another file. We also have the function declaration for setting the error message. The implementations for these functions are in `lib.c`.
+In this file, we have function declarations for library functions that may be used across multiple days. In this file we are defining a maximum size for an error message, and telling the compiler that the actual allocation for the error message string is in another file. We also have the function declaration for setting the error message, and a function declaration for formatting a duration. The implementations for these functions are in `lib.c`.
 
 ### lib.c
 ```c {linenos=table}
@@ -353,10 +354,36 @@ void set_err_msg(const char *msg, ...)
     vsnprintf(err_msg, ERR_MSG_SIZE - 1, msg, args);
     va_end(args);
 }
+
+void format_duration(char *buf, int buf_size, double seconds)
+{
+    char *s = "s";
+    char *ms = "ms";
+    char *us = "µs";
+    char *ns = "ns";
+
+    char *labels[] = {
+        s,
+        ms,
+        us,
+        ns,
+    };
+
+    int i;
+    for (i = 0; i < 4; i++)
+    {
+        if (seconds > 1e-3)
+            break;
+        seconds *= 1000;
+    }
+    snprintf(buf, buf_size, "%.3f%s", seconds, labels[i]);
+}
 ```
 
 In `lib.c`, we find the declaration and initialization for the `err_msg` string which holds the error message. As C does not implicitly initialize memory, we use the shorthand `{0}` to initialize the array to all zeroes, an empty string.
 
 We also have the implementation for `set_err_msg`, which is a simple wrapper around `vsnprintf`. `set_err_msg` is a _variadic function_, which means it can take an unbounded set of additional arguments, noted by the trailing `...` in the arguments list. Using `va_list`, `va_start`, and `va_end` from `stdarg.h` we are able to obtain and pass the set of variadic arguments down to `vsnprintf`, which itself wraps `snprintf` for this purpose.
+
+Finally, we have an implementation for formatting a duration in seconds. This function takes a pointer to a buffer, a buffer size, and a duration as arguments. We then declare an array of labels, and incrementally modify the duration until it is in a reasonable range and apply the appropriate label, then populate the provided buffer with the formatted string using `snprintf`.
 
 Now that we've completed our boilerplate, the next article will look at implementing Day 1 in C.
