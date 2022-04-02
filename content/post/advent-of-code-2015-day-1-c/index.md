@@ -53,13 +53,13 @@ There are a couple of ways we could handle this. We could create a custom `struc
 
 We'll first add our declaration to `lib.h`:
 
-```c
+```c {linenos=table,linenostart=10}
 int read_file_to_buffer(char **buf, const char *filename);
 ```
 
 Our function will have two arguments: A pointer to a pointer where we can place the pointer to the allocated buffer, and the string with the filename. It will return the length of the buffer. Here's our implementation that will be added to `lib.c`:
 
-```c
+```c {linenos=table,linenostart=43}
 int read_file_to_buffer(char **buf, const char *filename)
 {
     *buf = NULL;
