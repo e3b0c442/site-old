@@ -15,6 +15,8 @@ image:
   focal_point: Smart
   preview_only: false
 ---
+_The code for these articles can be found at [https://github.com/e3b0c442/aoc](https://github.com/e3b0c442/aoc)._
+
 We've set up our C build environment and boilerplate, and we're ready to dive into some problem solving. Let's take a look at the Day 1 puzzle.
 
 > Santa is trying to deliver presents in a large apartment building, but he can't find the right floor - the directions he got are a little confusing. He starts on the ground floor (floor `0`) and then follows the instructions one character at a time.
