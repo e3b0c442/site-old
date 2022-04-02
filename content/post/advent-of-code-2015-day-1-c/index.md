@@ -125,14 +125,14 @@ cleanup:
 
 Let's break this down.
 
-```c
+```c {linenos=table,linenostart=43}
     *buf = NULL;
     int rval;
 ```
 
 The first thing we do is set the *value* behind the provided pointer (so, the pointer being pointed to) to `NULL`. It will remain `NULL` unless the operation succeeds. We also predeclare our return value here.
 
-```c
+```c {linenos=table,linenostart=48}
     // open the file
     FILE *f = fopen(filename, "r");
     if (f == NULL)
@@ -144,7 +144,7 @@ The first thing we do is set the *value* behind the provided pointer (so, the po
 
 Now we are going to attempt to open the file. `fopen` is included from `stdio.h`, and it returns `NULL` and sets `errno` if the file cannot be opened. If that is the case, we set our own error message with a little more detail using our `set_err_msg` utility, and make a jump to do more cleanup (more on this in a bit).
 
-```c
+```c {linenos=table,linenostart=56}
     // get the length
     if (fseek(f, 0L, SEEK_END))
     {
@@ -164,7 +164,7 @@ Remember that this is C, and we do not have a dynamically-resizing array. Theref
 
 Finally, we `rewind` the file pointer to the beginning of the file to prepare for reading it.
 
-```c
+```c {linenos=table,linenostart=70}
     // allocate the buffer
     *buf = calloc(filesize + 1, sizeof(char));
     if (*buf == NULL)
@@ -176,7 +176,7 @@ Finally, we `rewind` the file pointer to the beginning of the file to prepare fo
 
 Now we allocate and initialize the buffer. `calloc` is included from `stdlib.h`, and takes two arguments: a number of objects, and the size of each object. In order to be extra clear here, we use sizeof(char) even though this is always one byte. We allocate `filesize+1` bytes to ensure we have a valid C string with a null terminator. `calloc` returns a pointer to the *initialized* buffer (all bytes are set to 0), saving us the step of manually initializing. If calloc returns `NULL` it was not able to allocate the memory. In practice, if this were to happen the system probably wouldn't even be able to get to a point where you could see the error output, but we'll handle the error case for consistency and because it's a good habit.
 
-```c
+```c {linenos=table,linenostart=78}
     // read the file into the buffer
     size_t rd = fread(*buf, 1, filesize, f);
     if (rd < filesize)
@@ -193,7 +193,7 @@ Now we allocate and initialize the buffer. `calloc` is included from `stdlib.h`,
 
 Now we'll read the file into the buffer. `fread` is included from `stdio.h` and takes four arguments: the buffer into which we're reading, the size of each object to read, the number of objects to read, and the file pointer to read from, and returns the number of bytes read. We use this for our error check; if the number of bytes read is less than what we were expecting, we check for a read error with `ferror` and then set our error message based on this. If `ferror` returns 0, there was another issue but we know we don't have the whole file, so we'll still return as an error.
 
-```c
+```c {linenos=table,linenostart=91}
     rval = rd;
     goto cleanup;
 
