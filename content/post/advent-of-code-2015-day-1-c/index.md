@@ -219,6 +219,7 @@ We now have a straightforward, reusable function for reading each day's input in
 ### The day
 
 ```c {linenos=table}
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -240,7 +241,7 @@ static int part1(const char *input, size_t input_len)
             break;
         default:
             set_err_msg("invalid input: %c", input[i]);
-            return -1;
+            return INT_MIN;
         }
     }
 
@@ -276,22 +277,20 @@ int day1(const char *filename)
 {
     printf("Day 1: Not Quite Lisp\n");
 
-    int rval = 0;
+    int rval = 11;
 
     char *input;
     int filesize = read_file_to_buffer(&input, filename);
     if (filesize < 0)
-        return 1;
+        return rval;
 
     clock_t start = clock();
     int solution = part1(input, filesize);
     clock_t end = clock();
     double duration = ((double)(end - start)) / CLOCKS_PER_SEC;
-    if (solution < 0)
-    {
-        rval = 1;
+    if (solution == INT_MIN)
         goto cleanup;
-    }
+
     char dur_buf[8] = {0};
     format_duration(dur_buf, 8, duration);
     printf("\tPart 1: %d (%s) \n", solution, dur_buf);
@@ -302,11 +301,10 @@ int day1(const char *filename)
     duration = ((double)(end - start)) / CLOCKS_PER_SEC;
     format_duration(dur_buf, 8, duration);
     if (solution < 0)
-    {
-        rval = 1;
         goto cleanup;
-    }
+
     printf("\tPart 2: %d (%s)\n", solution, dur_buf);
+    rval = 0
 
 cleanup:
     free(input);
@@ -317,6 +315,79 @@ cleanup:
 There are three functions in our `day` file: one matching the signature `int (const char *)` we utilize in our entrypoint, and two _static_ functions for each of the two parts of the days puzzle. We make these static functions so that they are not exported from the file, allowing us to reuse the identifiers in other files.
 
 At first glance, it seems that the `day1` function is also a good candidate for boilerplate. Unfortunately as we'll see in later days, that is not always the case. In some puzzles, the second part is dependent on the result of the first part, for example.
+
+Let's walk through what we're doing. We won't rehash this for subsequent days, unless there are changes.
+
+```c {linenos=table,linenostart=55
+int day1(const char *filename)
+{
+    printf("Day 1: Not Quite Lisp\n");
+```
+
+The first thing we do is print the puzzle's title. We pull this directly from the puzzle page, and it's just to keep the output sane.
+
+```c {linenos=table,linenostart=59}
+    int rval = 1;
+```
+
+Next we'll predeclare our return value. This isn't strictly necessary except in ANSI C, but having the variable declared and initialized to an error value allows us to use our cleanup jump, and saves some lines of code later.
+
+```c {linenos=table,linenostart=61}
+    char *input;
+    int filesize = read_file_to_buffer(&input, filename);
+    if (filesize < 0)
+        return rval;
+```
+
+Now we'll read our input file. We declare a pointer, and pass a pointer to that pointer to the `read_file_to_buffer` function, which will allocate and change the value of the pointer to point at the allocated string. `read_file_to_buffer` returns `<0` on failure, so we'll check for that and return an error value if the read fails.
+
+```c {linenos=table,linenostart=66}
+    clock_t start = clock();
+    int solution = part1(input, filesize);
+    clock_t end = clock();
+    double duration = ((double)(end - start)) / CLOCKS_PER_SEC;
+    if (solution == INT_MIN)
+        goto cleanup;
+
+    char dur_buf[8] = {0};
+    format_duration(dur_buf, 8, duration);
+    printf("\tPart 1: %d (%s) \n", solution, dur_buf);
+```
+
+These next few lines of code look pretty familiar from our entrypoint boilerplate. We take a monotonic clock reading, run the first part of the puzzle passing in the input string and the file size and returning the solution, and then take another clock reading, using the two readings to determine the duration. For this part of the problem, since the answer could ostensibly be either negative or positive, we use a _canary value_ of the `INT_MIN` constant which is defined in `limits.h` to indicate an error. Rather than immediately returning on error, we jump to cleanup -- we'll see why shortly.
+
+If our solution is good, we declare a short character buffer to hold the formatted duration and pass that along with the duration to the `format_duration` function in our library. Then we print the solution along with the duration.
+
+```c {linenos=table,linenostart=77}
+    start = clock();
+    solution = part2(input, filesize);
+    end = clock();
+    duration = ((double)(end - start)) / CLOCKS_PER_SEC;
+    format_duration(dur_buf, 8, duration);
+    if (solution < 0)
+        goto cleanup;
+
+    printf("\tPart 2: %d (%s)\n", solution, dur_buf);
+```
+
+The second part is almost identical to the first part. The differences are that we do not need to redeclare the duration format buffer, and that for part two we can use a negative value to determine an error state (we'll see why shortly).
+
+```c {linenos=table,linenostart=86}
+    rval = 0;
+
+cleanup:
+    free(input);
+    return rval;
+}
+```
+
+If we've made it to this point, there were no errors so we set our return value to a non-error value and continue to the cleanup.
+
+Our `read_file_to_buffer` function allocates and returns a character array on the heap. Remember that in C, heap memory management is our responsibility; therefore, we must `free` the allocated buffer or risk leaking memory.
+
+Finally, we return the `rval`. Structuring the function in this way allows us to save a lot of repeated code on error cases, and reuse the variable regardless of the error state of the function, making for a more concise (and in my opinion readable) function.
+
+
 
 #### Part 1
 
