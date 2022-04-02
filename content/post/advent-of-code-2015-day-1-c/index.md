@@ -218,5 +218,107 @@ We now have a straightforward, reusable function for reading each day's input in
 
 ### The day
 
+```c {linenos=table}
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "lib.h"
+
+static int part1(const char *input, size_t input_len)
+{
+    int floor = 0;
+    for (int i = 0; i < input_len; i++)
+    {
+        switch (input[i])
+        {
+        case '(':
+            floor++;
+            break;
+        case ')':
+            floor--;
+            break;
+        default:
+            set_err_msg("invalid input: %c", input[i]);
+            return -1;
+        }
+    }
+
+    return floor;
+}
+
+static int part2(const char *input, size_t input_len)
+{
+    int floor = 0;
+    for (int i = 0; i < input_len; i++)
+    {
+        switch (input[i])
+        {
+        case '(':
+            floor++;
+            break;
+        case ')':
+            floor--;
+            break;
+        default:
+            set_err_msg("invalid input: %c", input[i]);
+            return -1;
+        }
+        if (floor == -1)
+            return i + 1;
+    }
+
+    set_err_msg("solution not found");
+    return -1;
+}
+
+int day1(const char *filename)
+{
+    printf("Day 1: Not Quite Lisp\n");
+
+    int rval = 0;
+
+    char *input;
+    int filesize = read_file_to_buffer(&input, filename);
+    if (filesize < 0)
+        return 1;
+
+    clock_t start = clock();
+    int solution = part1(input, filesize);
+    clock_t end = clock();
+    double duration = ((double)(end - start)) / CLOCKS_PER_SEC;
+    if (solution < 0)
+    {
+        rval = 1;
+        goto cleanup;
+    }
+    char dur_buf[8] = {0};
+    format_duration(dur_buf, 8, duration);
+    printf("\tPart 1: %d (%s) \n", solution, dur_buf);
+
+    start = clock();
+    solution = part2(input, filesize);
+    end = clock();
+    duration = ((double)(end - start)) / CLOCKS_PER_SEC;
+    format_duration(dur_buf, 8, duration);
+    if (solution < 0)
+    {
+        rval = 1;
+        goto cleanup;
+    }
+    printf("\tPart 2: %d (%s)\n", solution, dur_buf);
+
+cleanup:
+    free(input);
+    return rval;
+}
+```
+
+There are three functions in our `day` file: one matching the signature `int (const char *)` we utilize in our entrypoint, and two _static_ functions for each of the two parts of the days puzzle. We make these static functions so that they are not exported from the file, allowing us to reuse the identifiers in other files.
+
+At first glance, it seems that the `day1` function is also a good candidate for boilerplate. Unfortunately as we'll see in later days, that is not always the case. In some puzzles, the second part is dependent on the result of the first part, for example.
+
+#### Part 1
+
 
 
