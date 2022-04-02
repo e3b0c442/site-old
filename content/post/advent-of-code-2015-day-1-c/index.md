@@ -219,7 +219,7 @@ We now have a straightforward, reusable function for reading each day's input in
 
 ### The day
 
-```c
+```c {linenos=table}
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -319,7 +319,7 @@ At first glance, it seems that the `day1` function is also a good candidate for 
 
 Let's walk through what we're doing. We won't rehash this for subsequent days, unless there are changes.
 
-```c
+```c {linenos=table,linenostart=55}
 int day1(const char *filename)
 {
     printf("Day 1: Not Quite Lisp\n");
@@ -327,13 +327,13 @@ int day1(const char *filename)
 
 The first thing we do is print the puzzle's title. We pull this directly from the puzzle page, and it's just to keep the output sane.
 
-```c
+```c {linenos=table,linenostart=59}
     int rval = 1;
 ```
 
 Next we'll predeclare our return value. This isn't strictly necessary except in ANSI C, but having the variable declared and initialized to an error value allows us to use our cleanup jump, and saves some lines of code later.
 
-```c
+```c {linenos=table,linenostart=61}
     char *input;
     int filesize = read_file_to_buffer(&input, filename);
     if (filesize < 0)
@@ -342,7 +342,7 @@ Next we'll predeclare our return value. This isn't strictly necessary except in 
 
 Now we'll read our input file. We declare a pointer, and pass a pointer to that pointer to the `read_file_to_buffer` function, which will allocate and change the value of the pointer to point at the allocated string. `read_file_to_buffer` returns `<0` on failure, so we'll check for that and return an error value if the read fails.
 
-```c
+```c {linenos=table,linenostart=66}
     clock_t start = clock();
     int solution = part1(input, filesize);
     clock_t end = clock();
@@ -359,7 +359,7 @@ These next few lines of code look pretty familiar from our entrypoint boilerplat
 
 If our solution is good, we declare a short character buffer to hold the formatted duration and pass that along with the duration to the `format_duration` function in our library. Then we print the solution along with the duration.
 
-```c
+```c {linenos=table,linenostart=77}
     start = clock();
     solution = part2(input, filesize);
     end = clock();
@@ -373,7 +373,7 @@ If our solution is good, we declare a short character buffer to hold the formatt
 
 The second part is almost identical to the first part. The differences are that we do not need to redeclare the duration format buffer, and that for part two we can use a negative value to determine an error state (we'll see why shortly).
 
-```c
+```c {linenos=table,linenostart=86}
     rval = 0;
 
 cleanup:
@@ -400,7 +400,7 @@ It's been awhile since we looked at the puzzle, so let's recap what we distilled
 
 Solving this puzzle is relatively easy. We'll need to set an initial value of `0`, iterate over the input, and mutate the value accordingly. Here's our solution:
 
-```c
+```c {linenos=table,linenostart=8}
 static int part1(const char *input, size_t input_len)
 {
     int floor = 0;
@@ -426,13 +426,13 @@ static int part1(const char *input, size_t input_len)
 
 Let's break this down.
 
-```c
+```c {linenos=table,linenostart=10}
     int floor = 0;
 ```
 
 First, we declare a variable that holds our solution value, and set it to `0` as specified in the puzzle.
 
-```c
+```c {linenos=table,linenostart=11}
     for (int i = 0; i < input_len; i++)
     {
 ```
@@ -445,7 +445,7 @@ Next, we set our predicate; that is, our requirement that must be met for the lo
 
 Finally, we set our increment. In this case it is simple, just add `1` to `i` for each loop, allowing us to operate on every element of the array.
 
-```c
+```c {linenos=table,linenostart=13}
         switch (input[i])
         {
         case '(':
@@ -466,7 +466,7 @@ Continuing on, if the character is `)`, we decrement `floor`, again as specified
 
 Finally, we have a case labeled `default`, which is matched if no other case matches the switch. Since we are expecting our input to only have `(` or `)`, we consider it an error case if another character is encountered, and so return our error canary value of `INT_MIN`. 
 
-```c
+```c {linenos=table,linenostart=25}
     }
 
     return floor;
