@@ -259,6 +259,32 @@ func main() {
 	start := time.Now()
 	for i, day := range days {
 		dayStart := time.Now()
+		if err := day(path.Join(os.Args[1], fmt.Sprintf("%d.txt", i+1))); err != nil {
+			log.Fatal(err)
+		}
+		dayEnd := time.Now()
+		fmt.Printf("\tCompleted in %s\n", dayEnd.Sub(dayStart))
+	}
+	fmt.Printf("All puzzles completed in %s\n", time.Now().Sub(start))
+}
+`
+```
+
+Similar to the single-day template, we have our package declaration and imports, so we won't go over those again.
+
+```go {linenos=table,linenostart=48}
+var days = []func(string) error{
+	{{ range . -}}aoc2015.Day{{.}},{{- end }}
+}
+```
+
+Here, we are defining a package variable, which is a slice of day functions. We use the `range` template action to iterate over the values of our context, which in this case is a slice of numbers, so the end result in the generated file will be one line per day with the function name.
+
+Now we go into our main function. The time measurement is nearly identical, so we won't cover that again, but here we use a `for` loop to loop over the slice of day functions:
+
+```go {linenos=table,linenostart=58}
+	for i, day := range days {
+		dayStart := time.Now()
 		err := day(path.Join(os.Args[1], fmt.Sprintf("%d.txt", i+1)))
 		dayEnd := time.Now()
 		if err != nil {
@@ -266,7 +292,15 @@ func main() {
 		}
 		fmt.Printf("\tCompleted in %s\n", dayEnd.Sub(dayStart))
 	}
-	fmt.Printf("All puzzles completed in %s\n", time.Now().Sub(start))
-}
-`
 ```
+
+For loops can be created in the same fashion as in C, but in Go they can also use the `range` keyword to iterate over a container, similar to the `in` keyword in Python. When that container is a slice, each iteration has access to the index (`i` in our loop) and the value (`day` in our loop). 
+
+```go {linenos=table,linenostart=60}
+		if err := day(path.Join(os.Args[1], fmt.Sprintf("%d.txt", i+1))); err != nil {
+			log.Fatal(err)
+		}
+```
+Here, we're making the call to the day function, which is passed as the variable `day` by the loop. Functions in Go are first class and can be assigned to variables directly, making it easy for us to pass them around in this manner. We provide our argument, which is the generated path to the input file -- the folder provided on the command line, plus the numbered filename. We use the same one-line error checking shorthand as in the single-day file.
+
+These two templates are the boilerplate for our main files. How do we use them to generate the actual files? This is where the `main` function in gen.go comes in (not to be confused with the `main` function in the templates).
