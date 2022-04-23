@@ -216,7 +216,7 @@ Once we've verified the arguments, we'll get the current time so that we can mea
 ```
 There are a couple of interesting things going on here. The first thing to note is that we have the one and only template tag for our file, `{{ . }}`. The dot in this case is the _context_, i.e. the data that is passed into the template executor along with the template itself. In our case, this is simply going to be a day number, so this tag would be replaced with a numeral when the template is executed.
 
-As far as what the generated code does: this is what actually pulls in our day logic and runs it. Our day functions will be in a separate package `aoc2015`, and they will all have the signature `func (string) error`, meaning they take a string filename, and return an error. We know our function is successful if the returned value is `nil`, that is, no error. Here, we use a shorthand which allows us to assign and evaluate `err` on the same line; this is frequently used for functions that return only `err` in order to error check. If we do get an error -- that is, `err` is not `nil` -- we will print and exit as before. The day function itself is responsible for printing its results if there is no error.
+As far as what the generated code does: this is what actually pulls in our day logic and runs it. Our day functions will be in a separate package `aoc2015`, and they will all have the signature `func (string) error`, meaning they take a single string argument, and return an error. We know our function is successful if the returned value is `nil`, that is, no error. Here, we use a shorthand which allows us to assign and evaluate `err` on the same line; this is frequently used for functions that return only `err` in order to error check. If we do get an error -- that is, `err` is not `nil` -- we will print and exit as before. The day function itself is responsible for printing its results if there is no error.
 
 ```go {linenos=table,linenostart=32}
 	fmt.Printf("\tCompleted in %s\n", time.Now().Sub(start))
@@ -225,11 +225,11 @@ As far as what the generated code does: this is what actually pulls in our day l
 
 Here, we take another time measurement and print the duration. There are a few things going on here. We are using the `Printf` function from the `fmt` package to print a formatted string, similar to C. Notice that we have a `%s` token in the format string, indicating that it is expecting a string argument.
 
-Taking a look at our argument, we are first getting another instantateous time measurement with `time.Now`. This returns a `time.Time` struct. We take advantage of this to chain into the `Sub` method (method is a function that is tied to a type, rather than being a first-class function) on `time.Time`, which takes another `time.Time` struct as its argument, and returns a `time.Duration`.
+Taking a look at our argument, we are first getting another instantateous time measurement with `time.Now`. This returns a `time.Time` struct. We take advantage of this to chain into the `Sub` method (a function that is tied to a type, as opposed to a first-class function) on `time.Time`, which takes another `time.Time` struct as its argument, and returns a `time.Duration`.
 
 But wait, you say. Our format string is expecting a string for the token, but we're passing it `time.Duration`. Won't that break?
 
-The answer is _no_, because of a special _interface_ satisfied by `time.Duration`. Interfaces are integral to go, and they are best described as a contract: any type that satisfies an interface implements all of the methods specified by that array. In our case, the %s token will accept a string, _or a value of a type that implements the `fmt.Stringer` interface_. `fmt.Stringer` specifies one method, `String() string`, which `time.Duration` implements. This allows us to pass the value, which formats itself for presentation.
+The answer is no, because of a special _interface_ satisfied by `time.Duration`. Interfaces are integral to go, and they are best described as a contract: any type that satisfies an interface implements all of the methods specified by that interface. In our case, the %s token will accept a string, _or a value of a type that implements the `fmt.Stringer` interface_. `fmt.Stringer` specifies one method, `String() string`, which `time.Duration` implements. This allows us to pass the value, which formats itself for presentation.
 
 Unlike in C, `main` has no return value in Go, so we simply end execution of the function.
 
