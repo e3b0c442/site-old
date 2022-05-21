@@ -1,5 +1,5 @@
 ---
-title: "Advent of Code 2015 Day 1: Go"
+title: "Advent of Code 2015 Day 1: Go boilerplate"
 date: 2022-04-23T11:51:00.000Z
 draft: false
 featured: false
