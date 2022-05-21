@@ -74,9 +74,9 @@ features:
     gravatar: false
     shape: circle
   comment:
-    provider: ''
+    provider: disqus
     disqus:
-      shortname: ''
+      shortname: e3b0c442
       show_count: true
     commento:
       url: ''
