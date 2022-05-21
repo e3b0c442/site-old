@@ -3,6 +3,10 @@ title: "Advent of Code 2015 Day 1: Go boilerplate"
 date: 2022-05-21T02:37:01.718Z
 draft: false
 featured: false
+tags:
+  - advent-of-code-2015
+  - advent-of-code
+  - go
 image:
   filename: featured
   focal_point: Smart
