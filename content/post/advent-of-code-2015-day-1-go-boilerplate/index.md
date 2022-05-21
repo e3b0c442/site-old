@@ -390,3 +390,5 @@ package aoc2015
 ```
 
 `doc.go` is a convention used by many programs to hold the package-level documentation. As you can see, we are doing that, but also adding another build tag. `go:generate` will run the remainder of the tag as a code generation step prior to the build step! There's no other code in this file, but it is still a part of the package. Going forward, all we'll need to do is update the args for `go run gen.go` for the days we add down the road, and then `go build` will automatically regenerate them at build time.
+
+Now that we have set up our "build environment", we can dig into the logic for day 1. But that's another article.
