@@ -3,6 +3,10 @@ title: "Advent of Code 2015 Day 1: Python"
 date: 2022-04-03T02:40:20.929Z
 draft: false
 featured: false
+tags:
+  - advent-of-code-2015
+  - advent-of-code
+  - python
 image:
   filename: featured
   focal_point: Smart
