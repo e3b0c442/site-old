@@ -12,6 +12,8 @@ image:
   focal_point: Smart
   preview_only: false
 ---
+_The code for these articles can be found at https://github.com/e3b0c442/aoc._
+
 Now that we've built our baseline for day 1 in C, let's look at Python.
 
 Python is by nearly all measures the most universally popular programming language today. It has a simplicity and flexibility that is unmatched, but the lack of strong typing and interpreted nature can make it a poor fit for complex codebases. One area to take particular care is that unlike most other modern languages, whitespace has meaning in Python, so make sure your indents are at the same levels if you're following along at home.
