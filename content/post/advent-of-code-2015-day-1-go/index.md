@@ -304,3 +304,44 @@ For loops can be created in the same fashion as in C, but in Go they can also us
 Here, we're making the call to the day function, which is passed as the variable `day` by the loop. Functions in Go are first class and can be assigned to variables directly, making it easy for us to pass them around in this manner. We provide our argument, which is the generated path to the input file -- the folder provided on the command line, plus the numbered filename. We use the same one-line error checking shorthand as in the single-day file.
 
 These two templates are the boilerplate for our main files. How do we use them to generate the actual files? This is where the `main` function in gen.go comes in (not to be confused with the `main` function in the templates).
+
+```go {linenos=table,linenostart=70}
+func main() {
+	single := template.New("single")
+	single = template.Must(single.Parse(singleTmpl))
+```
+
+This starts out simply enough. First, we create a new template using the `text/template` package. Then, we parse our template string for the single day template. This requires two lines because `Parse` is a method on `*text.Template`. We use the `Must` function here to eliminate an unnecessary error check; the template is part of the code itself, so it is expected to be correct. `Must` will panic if the template cannot be parsed. In the end, we end up with a pointer to a `text.Template` struct containing a parsed template.
+
+```go {linenos=table,linenostart=74
+	fmt.Println("generating mains")
+	days := os.Args[1:]
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+```
+
+After printing some output to let the runner know things are proceeding as expected, we grab our command-line arguments. Remember that the first item in `os.Args` is the command name, so we slice that first argument off to get the rest of the arguments. Our generator is expecting one numeric argument for each single day we are generating the main package for. Finally, we attempt retrieve the current working directory with `os.Getwd`, and panic if we can't, because that's not recoverable.
+
+```go {linenos=table,linenostart=81}
+	for _, day := range days {
+		dayPath := path.Join(wd, "cmd", fmt.Sprintf("day%s", day))
+		os.MkdirAll(dayPath, 0755)
+		f, err := os.Create(path.Join(dayPath, "main.go"))
+		if err != nil {
+			panic(err)
+		}
+		if err := single.Execute(f, day); err != nil {
+			panic(err)
+		}
+		f.Close()
+	}
+```
+
+Next is the actual logic that generates the boilerplates. For each argument representing a day number, we:
+* Determine the path for the main package for that day by joining the current working directory, the `cmd` subdirectory, and the `dayX` directory within `cmd` where X is the provided day number;
+* Create the directory for the main package for that day using the path with `os.MkdirAll`, using `os.MkdirAll` instead of `os.Mkdir` to cover the case that the `cmd` folder doesn't yet exist;
+* Create and open file called "main.go" within the package folder;
+* Execute the template with the `.Execute` method on the template, using the created file as the first (`io.Writer`) argument, and the day number as the second (context) argument, which populates the template and writes it to disk;
+* Close the opened file.
