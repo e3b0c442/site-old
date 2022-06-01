@@ -192,6 +192,7 @@ func day1Part1(input string) (int, error) {
 
 	return floor, nil
 }
+```
 
 As with Python, this function is nearly identical to its C counterpart (and even moreso than Python), except for some syntatical differences. First, note our function signature. Our function name is not capitalized, meaning we aren't exporting the function. This is fine, because no other package needs to see this function. That said, unlike the other langages, we do need to prepend the day information to the function name, since, while all our our functions are not in the same file, they _are_ in the same package and thus visible to each other. Our function takes the input string as an argument, and returns an `int` and an `error`. Both values must be returned with any return statement.
 
