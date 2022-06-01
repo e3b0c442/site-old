@@ -222,6 +222,7 @@ func day1Part2(input string) (int, error) {
 
 	return 0, fmt.Errorf("no solution found")
 }
+```
 
 The part 2 function is quite similar. As with the other languages, we do need to keep track of how far through the input we've advanced, so we will use the index variable provided by the `range` keyword. Like with the C and Python versions, we return an error state if we see an unexpected character, or if we get to the end of the input without a solution. Like in part one, we return `0` as the first value in those cases.
 
