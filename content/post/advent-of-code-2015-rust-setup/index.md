@@ -8,6 +8,8 @@ image:
   focal_point: Smart
   preview_only: false
 ---
+_The code for these articles can be found at [https://github.com/e3b0c442/aoc](https://github.com/e3b0c442/aoc)._
+
 Let's get our repo set up for the Rust side of our project.
 
 The astute reader may have noticed that I've titled this post "setup" and not "boilerplate". This is because our setup will obviate the need for boilerplate! Honestly it's quite similar to the code generation setup Go uses, except it's using a Rust _build script_, which does not place the generated source in the repo like our Go generator does.
