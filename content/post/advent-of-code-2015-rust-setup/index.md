@@ -393,6 +393,7 @@ In this section, we generate our single-day executables. First, we create the "b
 ```rust {linenos=table,linenostart=82}
     println!("cargo:rerun-if-changed=build.rs");
 }
+```
 
 The last thing we do is print a directive that is picked up by Cargo, telling it to re-run the script if the script itself has changed.
 
