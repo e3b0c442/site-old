@@ -388,5 +388,14 @@ Finally, we build the output file path using the `Path` module, and write the re
     }
 ```
 
-In this section, we generate our single-day executables
+In this section, we generate our single-day executables. First, we create the "bin" subfolder in our output directory, then loop over the days as we have done previously. From there, the steps are the same as the single-day section: render, create the path, and write.
 
+```rust {linenos=table,linenostart=82}
+    println!("cargo:rerun-if-changed=build.rs");
+}
+
+The last thing we do is print a directive that is picked up by Cargo, telling it to re-run the script if the script itself has changed.
+
+This is our setup. It is both similar and different to the code generation we used with Go; in Go, the generator added the files to the repo; with Rust, the generated files are only used during the build process and are not committed to the repo. The end result is that for each day we add, we only need to update the `DAYS` variable in `build.rs` and add a one-line `bin/dayX.rs` file with the include directive to update our runners. Not too shabby!
+
+In the next article we'll implement our day 1 solution in Rust.
