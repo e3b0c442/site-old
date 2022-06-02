@@ -1,6 +1,6 @@
 ---
 title: "Advent of Code 2015: Rust setup"
-date: 2022-06-01T14:14:42.987Z
+date: 2022-06-02T04:44:51.242Z
 draft: false
 featured: false
 image:
@@ -105,3 +105,286 @@ This line retrieves the command line arguments and `collect`s them into a `Vec<S
 ```
 
 This stanza retrieves the path argument from the provided command and calls the top level `run_all` (yet to be defined) function from our crate using the argument if it is provided. `args.get()` returns a `Option` `enum`, which is similar to the `Result` enum we just discussed. `Option` has two variants: `None` and `Some(T)`, where `T` has no bounds. `if let` is a shorthand construct for checking if a returned `Option` returns `Some` and extracting the value. If the assigned value is the `Some` variant, the value from the `Option` is placed into the `path` variable and the code inside the braces is executed. If the assigned value is the `None` variant, the code in the braces is not executed. This gives us a very clean way to check that the argument has been provided. `run_all` returns `Result<(), Box<dyn Error>>` as well so we will directly return the result if we execute; if not, we return the `Err` variant for our result, which is a `Box`ed `SimpleError`. Note that line 10 does not start with `return`. Also note that there is no semicolon. Rust automatically returns the value of the last expression in a function. A semicolon literally takes the value of the previous expression, discards its, and evaluates to `()`. By omitting the semicolon, the last expression is `Err(Box::new(SimpleError::new("No input path provided")))`, and is thus returned.
+
+So far, we have a basic _binary crate_. This crate offers a single module with a single executable. Our previous progams have multiple executables, and we'll want to repeat the pattern here, so we'll need multiple executables. Since we don't want to duplicate code across those executables, we'll also want the crate to be a _library crate_. Finally, we want to eliminate as much boilerplate as possible. So, let's add the rest of our "boilerplate" pieces.
+
+## src/lib.rs
+
+```rust {linenos=table}
+include!(concat!(env!("OUT_DIR"), "/lib.rs"));
+```
+
+What on earth is this? It's an include macro, for a file that doesn't exist yet. Remember how we hadn't yet defined `run_all`? Well, we still haven't, but we're getting closer.
+
+`lib.rs` has special meaning, just like `main.rs`. The existence of `lib.rs` indicates that this crate is a library crate. Crates can be both library and binary crates, and since we have both `main.rs` and `lib.rs`, this is the case. Anything that we want exposed by the crate must be exposed through lib.rs.
+
+## bin/day1.rs
+```rust {linenos=table}
+include!(concat!(env!("OUT_DIR"), "/bin/day1.rs"));
+```
+
+Why, this looks almost exactly the same as `lib.rs`!. This file represents our single-day executable, and we'll need to create a new one for each day. Our build script will handle populating the file, just as with making updates to `lib.rs`, but we must have the file shell there for it to be recognized as an executable. Each file in the `bin` directory is built as a separate executable by the Rust build system.
+
+
+## build.rs
+
+Here's where the magic happens:
+
+```rust {linenos=table}
+use serde::Serialize;
+use std::{env, fs, path::Path, path::PathBuf};
+use tinytemplate::TinyTemplate;
+
+static DAYS: [u8; 1] = [1];
+
+#[derive(Serialize)]
+struct LibContext {
+    days: &'static [u8],
+    cwd: PathBuf,
+}
+
+#[derive(Serialize)]
+struct MainContext {
+    day: u8,
+}
+
+static LIB_RS_TEMPLATE: &'static str = r#"
+use std::error::Error;
+use std::time::Instant;
+
+{{ for day in days }}
+#[path = "{cwd}/src/day{day}.rs"]
+mod day{day};
+{{ endfor }}
+
+{{ for day in days }}
+pub use day{day}::day{day};
+{{ endfor }}
+pub fn run_all(input_path: &str) -> Result<(), Box<dyn Error>> \{
+    let funcs = [
+        {{ for day in days -}}day{day},{{ endfor -}}
+    ];
+    let start = Instant::now();
+    for (i, func) in funcs.iter().enumerate() \{
+        func(&format!("\{}/\{}.txt", input_path, i + 1))?;
+    }
+    println!("All puzzles completed in \{:?}", start.elapsed());
+    Ok(())
+}
+"#;
+
+static DAY_MAIN_RS_TEMPLATE: &'static str = r#"
+use simple_error::SimpleError;
+use std::env;
+use std::error::Error;
+
+fn main() -> Result<(), Box<dyn Error>> \{
+    let args = env::args().collect::<Vec<String>>();
+    if let Some(path) = args.get(1) \{
+        return aoc2015::day{day}(path);
+    }
+    Err(Box::new(SimpleError::new("No input file provided")))
+}
+"#;
+
+fn main() {
+    let out_dir = env::var_os("OUT_DIR").unwrap();
+
+    let mut tt = TinyTemplate::new();
+    tt.add_template("lib.rs", LIB_RS_TEMPLATE).unwrap();
+    tt.add_template("day/main.rs", DAY_MAIN_RS_TEMPLATE)
+        .unwrap();
+
+    let ctx = LibContext {
+        days: &DAYS,
+        cwd: env::current_dir().unwrap(),
+    };
+    let lib_rs = tt.render("lib.rs", &ctx).unwrap();
+    let lib_rs_path = Path::new(&out_dir).join("lib.rs");
+    fs::write(&lib_rs_path, &lib_rs).unwrap();
+
+    fs::create_dir_all(Path::new(&out_dir).join("bin")).unwrap();
+    for day in DAYS {
+        let ctx = MainContext { day };
+        let main_rs = tt.render("day/main.rs", &ctx).unwrap();
+        let main_rs_path = Path::new(&out_dir)
+            .join("bin")
+            .join(format!("day{}.rs", day));
+        fs::write(&main_rs_path, &main_rs).unwrap();
+    }
+    println!("cargo:rerun-if-changed=build.rs");
+}
+```
+`build.rs` at the same level as `Cargo.toml` indicates a _build script._ This is arbitrary code which can affect the build process. In our case, we are using it to generate our boilerplates and add them to the built executable. Let's walk through this file.
+
+```rust {linenos=table}
+use serde::Serialize;
+use std::{env, error::Error, fs, path::Path, path::PathBuf};
+use tinytemplate::TinyTemplate;
+```
+
+As with `main.rs`, our preamble has our imports. We are using several items from the standard library, as well as items from `serde` and `tinytemplate` that we added to our `[build-dependencies]` section of `Cargo.toml`. We'll go over the usages as we encounter them.
+
+```rust {linenos=table,linenostart=5}
+static DAYS: [u8; 1] = [1];
+```
+
+Here, we are defining a `static` variable which is an array containing `1` item of type `u8`, and assigning it a value which is `[1]`. This is our list of days as in the previous languages, and one of two places we'll need to make a change every time we do a new day's puzzle.
+
+```rust {linenos=table,linenostart=7}
+#[derive(Serialize)]
+struct LibContext {
+    days: &'static [u8],
+    cwd: PathBuf,
+}
+
+#[derive(Serialize)]
+struct MainContext {
+    day: u8,
+}
+```
+
+In this section of code, we are defining two `struct`s which will be used to pass data to our templates. `tinytemplate` requires structs that implement the `serde::Serialize` trait, unlike our Go templates where we could pass any value in as the context. The `#[derive(Serialize)]` _attribute_ before each struct definition allow this implementation to be taken care of automatically, and are a part of the `serde` crate.
+
+We are generating two different types of files, so we have a context struct for each one. The `LibContext` struct has a _reference_ to the static days array we defined. Since we are referring to static data, we need to assign a static _lifetime_ to the reference, which is done with `'static`. The `static` lifetime is a reserved lifetime and indicates that the reference is valid for the entire lifetime of the running program. `LibContext` also contains a `PathBuf` which is an OS-independent file path.
+
+`MainContext` contains a single `u8` variable which represents the specific day being built.
+
+```rust {linenos=table,linenostart=18}
+static LIB_RS_TEMPLATE: &'static str = r#"
+use std::error::Error;
+use std::time::Instant;
+
+{{ for day in days }}
+#[path = "{cwd}/src/day{day}.rs"]
+mod day{day};
+{{ endfor }}
+
+{{ for day in days }}
+pub use day{day}::day{day};
+{{ endfor }}
+pub fn run_all(input_path: &str) -> Result<(), Box<dyn Error>> \{
+    let funcs = [
+        {{ for day in days -}}day{day},{{ endfor -}}
+    ];
+    let start = Instant::now();
+    for (i, func) in funcs.iter().enumerate() \{
+        func(&format!("\{}/\{}.txt", input_path, i + 1))?;
+    }
+    println!("All puzzles completed in \{:?}", start.elapsed());
+    Ok(())
+}
+"#;
+
+Here we have the template for the contents of our `lib.rs` file. Remember the `include!` macro in the actual file? This is the template for what ultimately what will be included. As string literals in Rust are references to `str`, we need to define the `static` lifetime on the reference. We are also using the raw string syntax `r#"..."#`, much like we used raw strings in Go.
+
+Let's dig a bit deeper into our template. 
+```
+use std::error::Error;
+use std::time::Instant;
+```
+
+In our preamble, we are importing `std::error::Error` and `std::time::Instant`. `Instant` will be used for measuring our runtimes.
+
+```
+{{ for day in days }}
+#[path = "{cwd}/src/day{day}.rs"]
+mod day{day};
+{{ endfor }}
+```
+
+In this stanza, our template will loop over the days provided in the context, and add a `mod dayX;` line for each day. `mod` tells the file that there is a _module_ of the same name at the provided path. In our case, the day modules will all be at the top level of the crate, so we don't need any further path. In front of each `mod` statement, there is also a `#[path]` attribute. Remember that unlike Go, our generated code will not be placed into the repository, so we need to tell the compiler where those files actually are. This is done using the `cwd` field in the context.
+
+```
+{{ for day in days }}
+pub use day{day}::day{day};
+{{ endfor }}
+```
+
+In this stanza, we again loop over all the days and create a `pub use dayX::dayX` statement for each day. Like other `use` statements, these are imports, but with an additional `pub` modifier which re-exports them. This would make the day functions available as `aoc2015::day1` if anybody were importing our crate.
+
+```
+pub fn run_all(input_path: &str) -> Result<(), Box<dyn Error>> \{
+    let funcs = [
+        {{ for day in days -}}day{day},{{ endfor -}}
+    ];
+    let start = Instant::now();
+    for (i, func) in funcs.iter().enumerate() \{
+        func(&format!("\{}/\{}.txt", input_path, i + 1))?;
+    }
+    println!("All puzzles completed in \{:?}", start.elapsed());
+    Ok(())
+}
+```
+
+Here we have the template for our `run_all` function that we've already referred to. This is functionally identical to the other languages' boilerplate; given a list of days, run each day's function with the provided input path, and then print the elapsed time at the end. We'll see each of the usages in this function later on, so I won't go into detail on them here.
+
+```rust {linenos=table,linenostart=43}
+static DAY_MAIN_RS_TEMPLATE: &'static str = r#"
+use simple_error::SimpleError;
+use std::env;
+use std::error::Error;
+
+fn main() \{
+    let args = env::args().collect::<Vec<String>>();
+    if let Some(path) = args.get(1) \{
+        return aoc2015::day{day}(path);
+    }
+    Err(Box::new(SimpleError::new("No input file provided")))
+}
+"#;
+```
+
+This statement defines the variable for our single-day template. We've already seen everything here so I won't deep-dive on it.
+
+```rust {linenos=table,linenostart=57}
+fn main() \{
+```
+
+Here we define the main function for our build script. A build script is just a Rust binary, so we use `main` just like any other Rust binary. We don't provide a return value here as any error we would encounter during the build is unrecoverable, so we will panic for those errors.
+
+```rust {linenos=table,linenostart=58}
+    let out_dir = env::var_os("OUT_DIR").unwrap();
+```
+
+The Rust build system provides the `OUT_DIR` environment variable to the build script, which is the folder in which the generated files should be placed. Here, we grab that variable from the OS. `env::var_os("OUT_DIR")` returns `Option`, so we chain the return into `unwrap()`. `unwrap()` returns the raw value for the `Some` variant, and _panics_ for the `None` variant. Since any errors here are errors in coding and thus unrecoverable, it is valid to panic and end execution.
+
+```rust {linenos=table,linenostart=60}
+    let mut tt = TinyTemplate::new();
+    tt.add_template("lib.rs", LIB_RS_TEMPLATE).unwrap();
+    tt.add_template("day/main.rs", DAY_MAIN_RS_TEMPLATE)
+        .unwrap();
+```
+
+In these lines, we initialize our template engine and add the templates we already defined. The `add_template` method returns `Result`, which we chain into `unwrap()`. `unwrap()` has the same behavior on `Result` as on `Option`, panicking if the `Err` variant is returned, or returning the raw `Ok` value.
+
+```rust {linenos=table,linenostart=65}
+    let ctx = LibContext {
+        days: &DAYS,
+        cwd: env::current_dir().unwrap(),
+    };
+    let lib_rs = tt.render("lib.rs", &ctx).unwrap();
+    let lib_rs_path = Path::new(&out_dir).join("lib.rs");
+    fs::write(&lib_rs_path, &lib_rs).unwrap();
+```
+
+This section of code is generating the contents of our `lib.rs` file. First, we create a context object with a reference to the static `DAYS` array and the current working directory (which is always the top-level directory of the crate when run from the build system). Note that `env::current_dir()` again returns `Result`, so we `unwrap()`.
+
+Next, we render the template into a `String` using the templating engine's `render()` method and `unwrap`ping the returned `Result`. The template name and context are passed into the `render()` method.
+
+Finally, we build the output file path using the `Path` module, and write the rendered string to the file, again `unwrap`ping the returned `Result`.
+
+```rust {linenos=table,linenostart=73}
+    fs::create_dir_all(Path::new(&out_dir).join("bin")).unwrap();
+    for day in DAYS {
+        let ctx = MainContext { day };
+        let main_rs = tt.render("day/main.rs", &ctx).unwrap();
+        let main_rs_path = Path::new(&out_dir)
+            .join("bin")
+            .join(format!("day{}.rs", day));
+        fs::write(&main_rs_path, &main_rs).unwrap();
+    }
+```
+
+In this section, we generate our single-day executables
+
