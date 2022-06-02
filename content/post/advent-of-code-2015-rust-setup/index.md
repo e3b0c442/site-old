@@ -319,7 +319,7 @@ pub fn run_all(input_path: &str) -> Result<(), Box<dyn Error>> \{
 }
 ```
 
-Here we have the template for our `run_all` function that we've already referred to. This is functionally identical to the other languages' boilerplate; given a list of days, run each day's function with the provided input path, and then print the elapsed time at the end. We'll see each of the usages in this function later on, so I won't go into detail on them here.
+Here we have the template for our `run_all` function that we've already referred to. This is functionally identical to the other languages' boilerplate; given a list of days, run each day's function with the provided input path, and then print the elapsed time at the end. We'll see each of the usages in this function later on, so I won't go into detail on them here. Note that the backslashes are necessary to escape the brackets for the templating engine and won't be part of the generated code.
 
 ```rust {linenos=table,linenostart=43}
 static DAY_MAIN_RS_TEMPLATE: &'static str = r#"
@@ -340,7 +340,7 @@ fn main() \{
 This statement defines the variable for our single-day template. We've already seen everything here so I won't deep-dive on it.
 
 ```rust {linenos=table,linenostart=57}
-fn main() \{
+fn main() {
 ```
 
 Here we define the main function for our build script. A build script is just a Rust binary, so we use `main` just like any other Rust binary. We don't provide a return value here as any error we would encounter during the build is unrecoverable, so we will panic for those errors.
