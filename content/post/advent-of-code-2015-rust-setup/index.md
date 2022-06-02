@@ -275,10 +275,12 @@ pub fn run_all(input_path: &str) -> Result<(), Box<dyn Error>> \{
     Ok(())
 }
 "#;
+```
 
 Here we have the template for the contents of our `lib.rs` file. Remember the `include!` macro in the actual file? This is the template for what ultimately what will be included. As string literals in Rust are references to `str`, we need to define the `static` lifetime on the reference. We are also using the raw string syntax `r#"..."#`, much like we used raw strings in Go.
 
 Let's dig a bit deeper into our template. 
+
 ```
 use std::error::Error;
 use std::time::Instant;
