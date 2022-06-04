@@ -4,4 +4,4 @@ headless: true
 weight: 10
 author: nick-meyer
 ---
-Hi, I'm Nick. I build infrastructure at Edgecast.
+Hi, I'm Nick. I build things, formerly infrastructure at Edgecast.
