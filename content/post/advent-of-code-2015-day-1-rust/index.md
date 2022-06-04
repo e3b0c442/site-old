@@ -287,20 +287,29 @@ Now that we have a value from `try_from`, we can check the value with our outer 
 There is no semicolon following the match statement, so the value of the expression is automatically returned.
 
 # Conclusion
-Rust is a very unique and powerful language. Unlike Go, there are frequently many ways to do things. We absolutely could have implemented our Rust solution using loops like our previous implementations. However, with Rust, we can have the advantage of the conciseness of the functional syntax without a performance impact.
+Rust is a very unique and powerful language. Unlike Go, there are frequently many ways to do things. We absolutely could have implemented our Rust solution using loops like our previous implementations. However, with Rust, we can have the advantage of the conciseness of the functional syntax without a performance impact. 
 
-Now that we have all four languages, let's see how long running day 1 takes for each.
+```console
+$ cargo build
+$ target/debug/day1 ../1.txt
+Day 1: Not Quite Lisp
+        Part 1: 232 (442.333µs)
+        Part 2: 1782 (122.666µs)
+                 Completed in 576.125µs
+```
 
-| Language       | Time (1000 executions) |
-|----------------|------------------------|
-| Python         | 33.752 seconds         |
-| C (debug)      | 1.006 seconds          |
-| C (optimized)  | 0.993 seconds          |
-| Go             | 1.602 seconds          |
-| Rust (dev)     | 1.466 seconds          |
-| Rust (release) | 1.216 seconds          |
+This is very similar to Go and actually quite a bit faster than our C debug build. If we do a release build, things get significantly faster:
 
-This is fairly as expected. Python takes longer by far, but this is primarly due to starting the interpreter 1000 times. If we were running the function 1000 times within an already existing Python shell, it would be much faster, but this isn't how most people would run the program.
+```console
+$ cargo build --release
+$ target/release/day1 ../1.txt
+Day 1: Not Quite Lisp
+        Part 1: 232 (38.083µs)
+        Part 2: 1782 (10.666µs)
+                 Completed in 75.375µs
 
-The remaining compiled executables are quite similar. The debug builds in C and Rust are slower than the release builds as expected. Rust is about 25% slower than C, which actually is somewhat surprising, and may be worth further testing around if an implementation more similar to our C and Go implementations would make it faster.
+This is quite a bit faster than even an optimized C build.
 
+The only "problem" with Rust is that it is also by far the most difficult language we're testing. As noted, there are a lot of different ways to do the same thing in Rust. There is also a lot of grammar and syntax to learn, and the concept of variable ownership comes to the forefront. The tradeoff of course is highly performant code that is guaranteed (barring use of `unsafe` of course) to not have any undefined behavior.
+
+We've completed our Day 1 series. I'd love to hear your comments about how things are going so far. My subsequent articles will likely lump the different language implementations for each day into one article, to improve ease of comparison and reduce verbosity.
