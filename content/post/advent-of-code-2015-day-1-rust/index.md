@@ -3,11 +3,17 @@ title: "Advent of Code 2015 Day 1: Rust"
 date: 2022-06-02T15:11:21.470Z
 draft: false
 featured: false
+tags:
+  - advent-of-code
+  - advent-of-code-2015
+  - rust
 image:
   filename: featured
   focal_point: Smart
   preview_only: false
 ---
+_The code for these articles can be found at [https://github.com/e3b0c442/aoc](https://github.com/e3b0c442/aoc)._
+
 We're nearly at the end of our day 1 implementations. Now that we have set up our Rust environment, let's dig into the code.
 
 # The Day
