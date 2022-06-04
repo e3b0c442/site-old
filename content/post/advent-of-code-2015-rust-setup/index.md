@@ -3,6 +3,10 @@ title: "Advent of Code 2015: Rust setup"
 date: 2022-06-02T04:44:51.242Z
 draft: false
 featured: false
+tags:
+  - advent-of-code-2015
+  - advent-of-code
+  - rust
 image:
   filename: featured
   focal_point: Smart
