@@ -12,18 +12,15 @@ We're nearly at the end of our day 1 implementations. Now that we have set up ou
 
 # The Day
 ```rust {linenos=table}
-use simple_error::{bail, SimpleError};
+use simple_error::{bail, simple_error};
 use std::error::Error;
-use std::fs::File;
-use std::io::prelude::*;
+use std::fs;
 use std::time::Instant;
 
 pub fn day1(input_file: &str) -> Result<(), Box<dyn Error>> {
     println!("Day 1: Not Quite Lisp");
 
-    let mut f = File::open(input_file)?;
-    let mut input = String::new();
-    f.read_to_string(&mut input)?;
+    let input = fs::read_to_string(input_file)?;
 
     let start = Instant::now();
     println!("\tPart 1: {} ({:?})", part1(&input)?, start.elapsed());
@@ -43,7 +40,7 @@ fn part1(input: &str) -> Result<i32, Box<dyn Error>> {
 
 #[derive(Debug)]
 enum Basement {
-    Floor(i32),
+    Step(i32),
     Err(Box<dyn Error>),
 }
 impl std::error::Error for Basement {}
@@ -62,23 +59,25 @@ fn part2(input: &str) -> Result<i32, Box<dyn Error>> {
             ')' => {
                 floor -= 1;
                 if floor < 0 {
-                    Err(Basement::Floor(step as i32))
+                    Err(Basement::Step(step as i32))
                 } else {
                     Ok(floor)
                 }
             }
-            _ => Err(Basement::Err(SimpleError::new("Invalid input").into())),
+            _ => Err(Basement::Err(simple_error!("Invalid input").into())),
         }) {
-        Err(Basement::Floor(step)) => Ok(step),
+        Err(Basement::Step(step)) => Ok(step),
+        Err(Basement::Err(err)) => Err(err),
         _ => bail!("Solution not found"),
     }
 }
+
 ```
 
 At the risk of sounding like a broken record, we have three functions in this module: the day's main function `day1`, which is exported via the `pub` keyword, and the `part1` and `part2` functions which are private to the module.
 
 ```rust {linenos=table}
-use simple_error::{bail, SimpleError};
+use simple_error::{bail, simple_error};
 use std::error::Error;
 use std::fs;
 use std::time::Instant;
@@ -119,4 +118,189 @@ Next, we read our input file into a string. Rust has provided a convenience func
 Similar to the other languages, we take timestamps, run our puzzle logic, and then print the solutions along with the elapsed time. The `println!` macro accepts a format string and a number of arguments equal to the number of parameters in the format string. In Rust, `{}` represents a format parameter, which may have additional information inside. Notice that the second parameter has `:?` inside; this tells the formatter to use the `Debug` formatter instead of the `Display` formatter. Any argument assigned to a `{:?}` parameter must implement `fmt::Debug`.
 
 Once the function has reached the end without encountering an error, the `Ok(())` statement sets the automatic return value.
+
+As with the other days, we expect this function to change minimally across the days, but enough that we can't factor it out.
+
+## Part 1
+
+```rust {linenos=table,linenostart=19}
+fn part1(input: &str) -> Result<i32, Box<dyn Error>> {
+    input.chars().try_fold(0, |floor, c| match c {
+        '(' => Ok(floor + 1),
+        ')' => Ok(floor - 1),
+        _ => bail!("Invalid input: {}", c),
+    })
+}
+```
+
+Surprise! After three days of very similar implementations, our Rust implementation is completely different. Rust's power and flexibility enable functional programming to a degree the other  languages don't _(ed note: Yes, I know Python has functional programming support, but it isn't as idiomatic as it is with JavaScript or Rust)_, so we are going to take advantage of iterators and make a concise solution.
+
+Remember our solution is the floor on which we arrive at the end of the instructions.
+
+Rather than taking this line-by-line, we're going to go expression-by-expression.
+
+```rust
+fn part1(input: &str) -> Result<i32, Box<dyn Error>> {
+```
+Our part function takes a string slice argument with the input, and returns a `Result` that matches the call in the exported function.
+
+```rust
+input.chars()
+```
+
+`str::chars()` returns an `Iterator` over the characters in `str`.
+
+```rust
+.try_fold(0, |floor, c| 
+```
+
+`Iterator::try_fold()` takes two arguments: an initialization value (we start at floor 0), and a closure with two parameters: a _mutable_ running value, and the current character. The closure is called once per item in the iterator (so in our case, once per character), and returns a `Result`. If the `Result` is `Err`, the iteration immediately stops and propogates the error. Otherwise, the `Ok` value is populated with the solution.
+
+```rust
+match c {
+    '(' => Ok(floor + 1),
+    ')' => Ok(floor - 1),
+    _ => bail!("Invalid input: {}", c),
+}
+```
+The body of our closure is a simple match statement. If the character is `(`, we return `floor + 1` (which becomes the `floor` argument on the next iteration, or the solution if the iterator is exhausted); if the character is `(`, we return `floor - 1`. If any other character is encountered, we use the `bail!` macro from `simple-error` to immediately return a `SimpleError` with the formatted message.
+
+When the iterator completes, it returns a `Result` of the same type as our function, so we can just use the statement value as the automatic return. 
+
+## Part 2
+
+```rust {linenos=table,linenostart=27}
+#[derive(Debug)]
+enum Basement {
+    Step(i32),
+    Err(Box<dyn Error>),
+}
+impl std::error::Error for Basement {}
+impl std::fmt::Display for Basement {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "")
+    }
+}
+
+fn part2(input: &str) -> Result<i32, Box<dyn Error>> {
+    match input
+        .chars()
+        .enumerate()
+        .try_fold(0, |mut floor, (step, c)| match c {
+            '(' => Ok(floor + 1),
+            ')' => {
+                floor -= 1;
+                if floor < 0 {
+                    Err(Basement::Step(step as i32))
+                } else {
+                    Ok(floor)
+                }
+            }
+            _ => Err(Basement::Err(simple_error!("Invalid input").into())),
+        }) {
+        Err(Basement::Step(step)) => Ok(step),
+        Err(Basement::Err(err)) => Err(err),
+        _ => bail!("Solution not found"),
+    }
+}
+```
+
+Ok, there's a bit more going on for part 2. As a reminder, we are looking for the one-based index of the step when we enter a basement floor (<`0`). In order to achieve this using an iterator, we are going to use an `enum` to contain either an error value or the value of the floor.
+
+```rust {linenos=table,linenostart=27}
+#[derive(Debug)]
+enum Basement {
+    Step(i32),
+    Err(Box<dyn Error>),
+}
+impl std::error::Error for Basement {}
+impl std::fmt::Display for Basement {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "")
+    }
+}
+```
+
+Our `enum` has two variants: a `Floor` variant which contains the step number where we hit the basement, and an `Err` variant which wraps an actual error. In order to short-circuit the iterator, we need to return an `Err` variant on our `Result`, and this allows us to do this while distinguishing between the value we're trying to get and an actual error. 
+
+The remaining lines are all necessary to have a type which satisfies the `std::error::Error` trait; specifically, it must implement both the `std::fmt::Debug` and `std::fmt::Display` traits. We can use the `#[derive(Debug)]` attribute to automatically implement `Debug`, but we must manually implement `Display`.
+
+This is done using an `impl` block. For any trait we are promising to satisfy with our type, we need an `impl` block for that trait. In the case of `std::error::Error`, since there are no methods outside of the `Debug` and `Display` traits that need to be implemented, we can use an empty block. 
+
+Since we don't care about displaying a message (no matter what we're unwrapping the underlying value and propagating that), we just have a simple implementation of the `fmt` method that writes an empty string.
+
+This code satisfies `std::error::Error` so we can use our type anywhere `Error` is accepted.
+
+Now that we have our types, we'll walk through statement by statement again.
+
+```rust
+match
+```
+
+Since we are ultimately looking for a specific variant of an `enum`, we will use a match statement to branch on that variant.
+
+```rust
+input.chars()
+```
+
+As in part 1, this returns an `Iterator` over the characters in the input string.
+
+```rust
+.enumerate()
+```
+
+This method returns a new iterator based on the original, which yields a tuple of the index and the value. We need the index to track our position for the puzzle solution.
+
+```rust
+try_fold(0, |mut floor, (step, c)|
+```
+
+As before, we'll use `try_fold` so that we can short-circuit on error. Note that the second argument _deconstructs_ the tuple into discrete variables that can be accessed in the closure.
+
+```rust
+match c {
+    '(' => Ok(floor + 1),
+    ')' => {
+        floor -= 1;
+        if floor < 0 {
+            Err(Basement::Step(step as i32))
+        } else {
+            Ok(floor)
+        }
+    }
+    _ => Err(Basement::Err(simple_error!("Invalid input").into())),
+}
+```
+
+Our in-closure match statement is similar to part 1, but there are two major differences. In the `)` arm, we check to see if we've entered the basement, and if so, return the `Err` variant with `Basement::Step` populated with our position in the input. In our `_` arm, we return a `Basement::Err` populated with our SimpleError (which we use the convenience macro `simple_error!` to create). The `into()` method `Box`es the `SimpleError` so that it correctly matches our return type.
+
+```rust
+) {
+        Err(Basement::Step(step)) => Ok(step),
+        Err(Basement::Err(err)) => Err(err),
+        _ => bail!("Solution not found"),
+    }
+}
+```
+Now that we have a value from `try_from`, we can check the value with our outer `match` statement. If the returned Result matches `Err(Basement::Step)`, the value of the `match` statement is a `Result` with the `Ok` variant containing the step number. If `Err(Basement::Err)` matches, then the value of the `match` statement is a `Result` with the `Err` variant containing the error message. Finally, if anything else is returned, we immediately `bail` with "Solution not found", as we would only encounter this branch if the input ran to the end  with no solution.
+
+There is no semicolon following the match statement, so the value of the expression is automatically returned.
+
+# Conclusion
+Rust is a very unique and powerful language. Unlike Go, there are frequently many ways to do things. We absolutely could have implemented our Rust solution using loops like our previous implementations. However, with Rust, we can have the advantage of the conciseness of the functional syntax without a performance impact.
+
+Now that we have all four languages, let's see how long running day 1 takes for each.
+
+| Language       | Time (1000 executions) |
+|----------------|------------------------|
+| Python         | 33.752 seconds         |
+| C (debug)      | 1.006 seconds          |
+| C (optimized)  | 0.993 seconds          |
+| Go             | 1.602 seconds          |
+| Rust (dev)     | 1.466 seconds          |
+| Rust (release) | 1.216 seconds          |
+
+This is fairly as expected. Python takes longer by far, but this is primarly due to starting the interpreter 1000 times. If we were running the function 1000 times within an already existing Python shell, it would be much faster, but this isn't how most people would run the program.
+
+The remaining compiled executables are quite similar. The debug builds in C and Rust are slower than the release builds as expected. Rust is about 25% slower than C, which actually is somewhat surprising, and may be worth further testing around if an implementation more similar to our C and Go implementations would make it faster.
 
