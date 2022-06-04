@@ -307,6 +307,7 @@ Day 1: Not Quite Lisp
         Part 1: 232 (38.083µs)
         Part 2: 1782 (10.666µs)
                  Completed in 75.375µs
+```
 
 This is quite a bit faster than even an optimized C build.
 
