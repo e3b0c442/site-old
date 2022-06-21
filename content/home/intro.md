@@ -1,5 +1,5 @@
 ---
-widget: https://e3b0c442.dev/admin/#/collections/homeabout.avatar
+widget: about.avatar
 headless: true
 weight: 10
 author: nick-meyer
